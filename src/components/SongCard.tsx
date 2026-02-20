@@ -1,17 +1,13 @@
+import { forwardRef } from "react";
 import { motion } from "framer-motion";
 import { Music, Clock, Disc3 } from "lucide-react";
 import type { Song } from "@/hooks/useSongs";
 import PipelineStatus from "./PipelineStatus";
 
-export default function SongCard({
-  song,
-  onSelect,
-  selected,
-}: {
-  song: Song;
-  onSelect: (song: Song) => void;
-  selected: boolean;
-}) {
+const SongCard = forwardRef<
+  HTMLDivElement,
+  { song: Song; onSelect: (song: Song) => void; selected: boolean }
+>(({ song, onSelect, selected }, ref) => {
   const formatDuration = (seconds: number | null) => {
     if (!seconds) return "--:--";
     const m = Math.floor(seconds / 60);
@@ -21,6 +17,7 @@ export default function SongCard({
 
   return (
     <motion.div
+      ref={ref}
       layout
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
@@ -55,7 +52,7 @@ export default function SongCard({
           </div>
         </div>
       </div>
-      
+
       {song.status !== "completed" && (
         <div className="mt-3">
           <PipelineStatus status={song.status} />
@@ -63,4 +60,7 @@ export default function SongCard({
       )}
     </motion.div>
   );
-}
+});
+
+SongCard.displayName = "SongCard";
+export default SongCard;

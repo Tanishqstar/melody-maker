@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Music, X, Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,22 @@ const GENRES = [
   "Pop", "R&B", "Hip-Hop", "Rock", "Electronic",
   "Jazz", "Classical", "Country", "Indie", "Lo-Fi",
 ];
+
+const Overlay = forwardRef<HTMLDivElement, { onClose: () => void; children: React.ReactNode }>(
+  ({ onClose, children }, ref) => (
+    <motion.div
+      ref={ref}
+      className="fixed inset-0 z-50 flex items-center justify-center"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+    >
+      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} />
+      {children}
+    </motion.div>
+  )
+);
+Overlay.displayName = "Overlay";
 
 export default function CreateSongDialog({
   open,
@@ -46,13 +62,7 @@ export default function CreateSongDialog({
   return (
     <AnimatePresence>
       {open && (
-        <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-        >
-          <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} />
+        <Overlay onClose={onClose}>
           <motion.div
             className="relative z-10 w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-2xl studio-glow"
             initial={{ scale: 0.9, y: 20 }}
@@ -126,7 +136,7 @@ export default function CreateSongDialog({
               </Button>
             </div>
           </motion.div>
-        </motion.div>
+        </Overlay>
       )}
     </AnimatePresence>
   );
