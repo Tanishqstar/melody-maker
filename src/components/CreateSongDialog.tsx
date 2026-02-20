@@ -19,7 +19,7 @@ const Overlay = forwardRef<HTMLDivElement, { onClose: () => void; children: Reac
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
-      <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-background/70 backdrop-blur-md" onClick={onClose} />
       {children}
     </motion.div>
   )
@@ -64,68 +64,74 @@ export default function CreateSongDialog({
       {open && (
         <Overlay onClose={onClose}>
           <motion.div
-            className="relative z-10 w-full max-w-lg rounded-2xl border border-border bg-card p-6 shadow-2xl studio-glow"
-            initial={{ scale: 0.9, y: 20 }}
-            animate={{ scale: 1, y: 0 }}
-            exit={{ scale: 0.9, y: 20 }}
+            className="relative z-10 w-full max-w-lg rounded-3xl border border-border/60 bg-card/80 glass-card p-7 shadow-2xl"
+            initial={{ scale: 0.9, y: 30, opacity: 0 }}
+            animate={{ scale: 1, y: 0, opacity: 1 }}
+            exit={{ scale: 0.95, y: 20, opacity: 0 }}
+            transition={{ type: "spring", damping: 25, stiffness: 300 }}
           >
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-7">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/15 studio-glow-sm">
                   <Music className="h-5 w-5 text-primary" />
                 </div>
-                <h2 className="text-xl font-semibold text-foreground">New Production</h2>
+                <div>
+                  <h2 className="text-xl font-bold text-foreground">New Production</h2>
+                  <p className="text-xs text-muted-foreground">Create an AI-generated track</p>
+                </div>
               </div>
-              <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors">
+              <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors rounded-lg p-1.5 hover:bg-muted">
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-5">
               <div>
-                <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Track Title</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Track Title</label>
                 <input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="My Song"
-                  className="w-full rounded-lg border border-border bg-muted px-4 py-2.5 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                  placeholder="Midnight Dreams"
+                  className="w-full rounded-xl border border-border bg-muted/50 px-4 py-3 text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/30 transition-all"
                 />
               </div>
 
               <div>
-                <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Genre / Style</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Genre / Style</label>
                 <div className="flex flex-wrap gap-2">
                   {GENRES.map((g) => (
-                    <button
+                    <motion.button
                       key={g}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                       onClick={() => setGenre(g)}
-                      className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
+                      className={`rounded-full px-3.5 py-1.5 text-xs font-semibold transition-all ${
                         genre === g
                           ? "bg-primary text-primary-foreground studio-glow-sm"
-                          : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                          : "bg-secondary/80 text-secondary-foreground hover:bg-secondary"
                       }`}
                     >
                       {g}
-                    </button>
+                    </motion.button>
                   ))}
                 </div>
               </div>
 
               <div>
-                <label className="text-sm font-medium text-muted-foreground mb-1.5 block">Lyrics</label>
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 block">Lyrics</label>
                 <textarea
                   value={lyrics}
                   onChange={(e) => setLyrics(e.target.value)}
                   placeholder={"[Verse 1]\nWrite your lyrics here...\n\n[Chorus]\n..."}
                   rows={6}
-                  className="w-full rounded-lg border border-border bg-muted px-4 py-2.5 text-foreground font-mono text-sm placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none transition-all"
+                  className="w-full rounded-xl border border-border bg-muted/50 px-4 py-3 text-foreground font-mono text-sm placeholder:text-muted-foreground/40 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/30 resize-none transition-all"
                 />
               </div>
 
               <Button
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="w-full h-11 rounded-xl bg-primary text-primary-foreground hover:bg-primary/90 studio-glow-sm font-semibold"
+                className="w-full h-12 rounded-xl bg-primary text-primary-foreground hover:brightness-110 studio-glow-sm font-bold text-sm"
               >
                 {submitting ? (
                   <Loader2 className="h-4 w-4 animate-spin mr-2" />
