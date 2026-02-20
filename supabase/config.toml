@@ -1,0 +1,4 @@
+project_id = "qvmcmzhkybqayikrpjyr"
+
+[functions.generate-song]
+verify_jwt = false
