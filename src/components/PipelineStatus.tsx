@@ -1,5 +1,4 @@
-import { motion } from "framer-motion";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, XCircle } from "lucide-react";
 
 const STEPS = [
   { key: "queued", label: "Queued" },
@@ -12,14 +11,24 @@ const STEPS = [
 const STATUS_ORDER = ["queued", "analyzing", "synthesizing", "mastering", "completed"];
 
 export default function PipelineStatus({ status }: { status: string }) {
-  const currentIdx = STATUS_ORDER.indexOf(status);
+  const isFailed = status === "failed";
+  const currentIdx = isFailed ? -1 : STATUS_ORDER.indexOf(status);
+
+  if (isFailed) {
+    return (
+      <div className="flex items-center gap-2 text-destructive">
+        <XCircle className="h-4 w-4" />
+        <span className="text-xs font-medium">Generation failed</span>
+      </div>
+    );
+  }
 
   return (
     <div className="flex items-center gap-1">
       {STEPS.map((step, i) => {
         const isDone = i < currentIdx;
         const isActive = i === currentIdx;
-        
+
         return (
           <div key={step.key} className="flex items-center gap-1">
             <div className="flex flex-col items-center">
