@@ -8,7 +8,7 @@ import SongDetail from "@/components/SongDetail";
 import Visualizer3D from "@/components/Visualizer3D";
 
 const Index = () => {
-  const { songs, loading } = useSongs();
+  const { songs, loading, retrySong } = useSongs();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedSong, setSelectedSong] = useState<Song | null>(null);
 
@@ -63,6 +63,7 @@ const Index = () => {
                 song={song}
                 onSelect={setSelectedSong}
                 selected={selectedSong?.id === song.id}
+                onRetry={retrySong}
               />
             ))
           )}
