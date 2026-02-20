@@ -1,10 +1,10 @@
 import type { Song } from "@/hooks/useSongs";
 import { motion } from "framer-motion";
-import { Play, Pause, SkipForward, Volume2, VolumeX, AlertCircle } from "lucide-react";
+import { Play, Pause, SkipForward, Volume2, VolumeX, AlertCircle, ArrowLeft, Disc3 } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import PipelineStatus from "./PipelineStatus";
 
-export default function SongDetail({ song }: { song: Song | null }) {
+export default function SongDetail({ song, onBack }: { song: Song | null; onBack?: () => void }) {
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -12,7 +12,6 @@ export default function SongDetail({ song }: { song: Song | null }) {
   const [muted, setMuted] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  // Reset playback state when song changes
   useEffect(() => {
     setPlaying(false);
     setCurrentTime(0);
@@ -25,19 +24,21 @@ export default function SongDetail({ song }: { song: Song | null }) {
 
   const togglePlay = () => {
     if (!audioRef.current || !song?.audio_url) return;
-    if (playing) {
-      audioRef.current.pause();
-    } else {
-      audioRef.current.play();
-    }
+    if (playing) audioRef.current.pause();
+    else audioRef.current.play();
     setPlaying(!playing);
   };
 
   const toggleMute = () => {
-    if (audioRef.current) {
-      audioRef.current.muted = !muted;
-    }
+    if (audioRef.current) audioRef.current.muted = !muted;
     setMuted(!muted);
+  };
+
+  const seek = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!audioRef.current || !duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = (e.clientX - rect.left) / rect.width;
+    audioRef.current.currentTime = pct * duration;
   };
 
   const formatTime = (s: number) => {
@@ -46,132 +47,140 @@ export default function SongDetail({ song }: { song: Song | null }) {
     return `${m}:${sec.toString().padStart(2, "0")}`;
   };
 
-  if (!song) {
-    return (
-      <div className="flex h-full items-center justify-center text-muted-foreground">
-        <p className="text-sm">Select a track to view details</p>
-      </div>
-    );
-  }
+  if (!song) return null;
 
   const isReady = song.status === "completed";
   const hasAudio = !!song.audio_url;
+  const progress = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
-    <motion.div
-      key={song.id}
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      className="flex flex-col h-full"
-    >
-      {/* Hidden audio element */}
+    <div className="max-w-3xl mx-auto">
       {hasAudio && (
         <audio
-          ref={(el) => {
-            audioRef.current = el;
-            if (el) el.volume = volume;
-          }}
+          ref={(el) => { audioRef.current = el; if (el) el.volume = volume; }}
           src={song.audio_url!}
-          onTimeUpdate={() => {
-            if (audioRef.current) setCurrentTime(audioRef.current.currentTime);
-          }}
-          onLoadedMetadata={() => {
-            if (audioRef.current) setDuration(audioRef.current.duration);
-          }}
+          onTimeUpdate={() => { if (audioRef.current) setCurrentTime(audioRef.current.currentTime); }}
+          onLoadedMetadata={() => { if (audioRef.current) setDuration(audioRef.current.duration); }}
           onEnded={() => setPlaying(false)}
         />
       )}
 
-      {/* Header */}
-      <div className="p-5 border-b border-border">
-        <h2 className="text-2xl font-bold text-foreground">{song.title}</h2>
-        <div className="flex items-center gap-3 mt-2">
-          <span className="text-xs font-medium text-primary bg-primary/10 px-2.5 py-1 rounded-full">
-            {song.genre}
-          </span>
-          {song.bpm && <span className="text-xs text-muted-foreground">{song.bpm} BPM</span>}
-          {song.duration && (
-            <span className="text-xs text-muted-foreground">
-              {Math.floor(song.duration / 60)}:{(song.duration % 60).toString().padStart(2, "0")}
-            </span>
+      {/* Back button */}
+      {onBack && (
+        <button onClick={onBack} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6 transition-colors">
+          <ArrowLeft className="h-4 w-4" /> Back to tracks
+        </button>
+      )}
+
+      {/* Hero Card */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="rounded-3xl border border-border/60 bg-card/60 glass-card overflow-hidden"
+      >
+        {/* Cover area */}
+        <div className="relative p-8 pb-6 studio-gradient">
+          <div className="flex items-start gap-6">
+            <div className={`flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl ${
+              isReady ? "bg-primary/15 studio-glow-sm" : "bg-muted"
+            }`}>
+              <Disc3 className={`h-12 w-12 ${isReady ? "text-primary" : "text-muted-foreground"} ${playing ? "animate-spin" : ""}`} style={playing ? { animationDuration: "3s" } : {}} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <span className="text-[10px] font-semibold uppercase tracking-wider text-primary bg-primary/10 px-2.5 py-1 rounded-full">
+                {song.genre}
+              </span>
+              <h2 className="text-3xl font-extrabold text-foreground mt-2 truncate">{song.title}</h2>
+              <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                {song.bpm && <span>{song.bpm} BPM</span>}
+                {song.duration && <span>{Math.floor(song.duration / 60)}:{(song.duration % 60).toString().padStart(2, "0")}</span>}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Player section */}
+        <div className="p-8 pt-4">
+          {!isReady ? (
+            <div className="space-y-4 py-4">
+              <p className="text-sm text-muted-foreground">Production in progress...</p>
+              <PipelineStatus status={song.status} />
+            </div>
+          ) : (
+            <div className="space-y-5">
+              {!hasAudio && (
+                <div className="flex items-center gap-2 rounded-xl bg-muted/50 border border-border p-3">
+                  <AlertCircle className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <p className="text-xs text-muted-foreground">Audio generation pending — connect the Suno API to produce playable tracks.</p>
+                </div>
+              )}
+
+              {/* Waveform / Progress Bar */}
+              <div className="space-y-2">
+                <div
+                  onClick={seek}
+                  className="relative h-16 rounded-xl bg-muted/40 overflow-hidden cursor-pointer group"
+                >
+                  {/* Waveform bars */}
+                  <div className="absolute inset-0 flex items-center gap-[1.5px] px-3">
+                    {Array.from({ length: 100 }).map((_, i) => {
+                      const h = 20 + Math.abs(Math.sin(i * 0.3)) * 60;
+                      const isPlayed = (i / 100) * 100 <= progress;
+                      return (
+                        <div
+                          key={i}
+                          className={`w-[2px] rounded-full transition-colors duration-150 ${
+                            isPlayed ? "bg-primary" : "bg-muted-foreground/20 group-hover:bg-muted-foreground/30"
+                          }`}
+                          style={{ height: `${h}%` }}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {hasAudio && (
+                  <div className="flex justify-between text-[11px] text-muted-foreground px-1 font-mono">
+                    <span>{formatTime(currentTime)}</span>
+                    <span>{formatTime(duration)}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Transport Controls */}
+              <div className="flex items-center justify-center gap-5">
+                <button onClick={toggleMute} className="text-muted-foreground hover:text-foreground transition-colors p-2">
+                  {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
+                </button>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={togglePlay}
+                  disabled={!hasAudio}
+                  className={`flex h-14 w-14 items-center justify-center rounded-full transition-all ${
+                    hasAudio
+                      ? "bg-primary text-primary-foreground studio-glow-sm hover:brightness-110"
+                      : "bg-muted text-muted-foreground cursor-not-allowed"
+                  }`}
+                >
+                  {playing ? <Pause className="h-6 w-6" /> : <Play className="h-6 w-6 ml-0.5" />}
+                </motion.button>
+                <button className="text-muted-foreground hover:text-foreground transition-colors p-2">
+                  <SkipForward className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
           )}
-        </div>
-      </div>
 
-      {/* Pipeline / Player */}
-      <div className="p-5 flex-1 overflow-auto">
-        {!isReady ? (
-          <div className="space-y-4">
-            <p className="text-sm text-muted-foreground">Production in progress...</p>
-            <PipelineStatus status={song.status} />
+          {/* Lyrics */}
+          <div className="mt-8">
+            <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Lyrics</h3>
+            <pre className="text-sm text-foreground/75 font-mono whitespace-pre-wrap leading-relaxed bg-muted/30 rounded-2xl p-5 border border-border/40">
+              {song.lyrics}
+            </pre>
           </div>
-        ) : (
-          <div className="space-y-6">
-            {!hasAudio && (
-              <div className="flex items-center gap-2 rounded-lg bg-muted/50 border border-border p-3">
-                <AlertCircle className="h-4 w-4 text-muted-foreground shrink-0" />
-                <p className="text-xs text-muted-foreground">
-                  Audio generation is simulated — no audio file was produced. Connect a real music API to generate playable tracks.
-                </p>
-              </div>
-            )}
-
-            {/* Waveform placeholder */}
-            <div className="h-20 rounded-lg bg-muted/50 flex items-center justify-center gap-[2px] px-4 overflow-hidden">
-              {Array.from({ length: 80 }).map((_, i) => {
-                const h = 20 + Math.abs(Math.sin(i * 0.3)) * 60;
-                return (
-                  <div
-                    key={i}
-                    className="w-1 rounded-full bg-primary/60"
-                    style={{ height: `${h}%` }}
-                  />
-                );
-              })}
-            </div>
-
-            {/* Time display */}
-            {hasAudio && (
-              <div className="flex justify-between text-[10px] text-muted-foreground px-1 -mt-4">
-                <span>{formatTime(currentTime)}</span>
-                <span>{formatTime(duration)}</span>
-              </div>
-            )}
-
-            {/* Transport */}
-            <div className="flex items-center justify-center gap-4">
-              <button
-                onClick={toggleMute}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                {muted ? <VolumeX className="h-5 w-5" /> : <Volume2 className="h-5 w-5" />}
-              </button>
-              <button
-                onClick={togglePlay}
-                disabled={!hasAudio}
-                className={`flex h-12 w-12 items-center justify-center rounded-full transition-all ${
-                  hasAudio
-                    ? "bg-primary text-primary-foreground studio-glow-sm hover:bg-primary/90 cursor-pointer"
-                    : "bg-muted text-muted-foreground cursor-not-allowed"
-                }`}
-              >
-                {playing ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5 ml-0.5" />}
-              </button>
-              <button className="text-muted-foreground hover:text-foreground transition-colors">
-                <SkipForward className="h-5 w-5" />
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Lyrics */}
-        <div className="mt-6">
-          <h3 className="text-sm font-semibold text-muted-foreground mb-2">Lyrics</h3>
-          <pre className="text-sm text-foreground/80 font-mono whitespace-pre-wrap leading-relaxed bg-muted/30 rounded-lg p-4">
-            {song.lyrics}
-          </pre>
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 }

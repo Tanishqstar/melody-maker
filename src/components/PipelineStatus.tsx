@@ -18,22 +18,22 @@ export default function PipelineStatus({ status }: { status: string }) {
     return (
       <div className="flex items-center gap-2 text-destructive">
         <XCircle className="h-4 w-4" />
-        <span className="text-xs font-medium">Generation failed</span>
+        <span className="text-xs font-semibold">Generation failed</span>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1.5">
       {STEPS.map((step, i) => {
         const isDone = i < currentIdx;
         const isActive = i === currentIdx;
 
         return (
-          <div key={step.key} className="flex items-center gap-1">
+          <div key={step.key} className="flex items-center gap-1.5">
             <div className="flex flex-col items-center">
               <div
-                className={`flex h-5 w-5 items-center justify-center rounded-full text-[10px] transition-all ${
+                className={`flex h-6 w-6 items-center justify-center rounded-full text-[10px] font-semibold transition-all ${
                   isDone
                     ? "bg-primary text-primary-foreground"
                     : isActive
@@ -49,16 +49,12 @@ export default function PipelineStatus({ status }: { status: string }) {
                   <span>{i + 1}</span>
                 )}
               </div>
-              <span className={`text-[9px] mt-0.5 ${isActive ? "text-primary" : "text-muted-foreground"}`}>
+              <span className={`text-[9px] mt-1 font-medium ${isActive ? "text-primary" : "text-muted-foreground"}`}>
                 {step.label}
               </span>
             </div>
             {i < STEPS.length - 1 && (
-              <div
-                className={`h-px w-4 mb-3 ${
-                  isDone ? "bg-primary" : "bg-border"
-                }`}
-              />
+              <div className={`h-px w-4 mb-4 rounded-full ${isDone ? "bg-primary" : "bg-border"}`} />
             )}
           </div>
         );
