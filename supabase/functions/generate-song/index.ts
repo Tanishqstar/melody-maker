@@ -52,8 +52,10 @@ serve(async (req) => {
         prompt: song.lyrics,
         tags: song.genre.toLowerCase(),
         title: song.title,
+        model: "V4",
         customMode: true,
         instrumental: false,
+        callBackUrl: `${Deno.env.get("SUPABASE_URL")}/functions/v1/generate-song-callback`,
       }),
     });
 
@@ -86,9 +88,8 @@ serve(async (req) => {
     const result = await pollSunoResult(SUNO_API_KEY, taskId);
     if (!result) throw new Error("Suno generation timed out after 5 minutes");
 
-    const audioUrl = result.audioUrl || result.audio_url;
-    const streamUrl = result.streamUrl || result.stream_url;
-    const finalUrl = audioUrl || streamUrl;
+    const finalUrl = result.audioUrl;
+    console.log("Final audio URL:", finalUrl);
 
     if (!finalUrl) throw new Error("No audio URL in Suno response");
 
@@ -187,27 +188,48 @@ async function pollSunoResult(apiKey: string, taskId: string, maxAttempts = 60):
       const data = await res.json();
       console.log(`Poll attempt ${i + 1}:`, JSON.stringify(data));
 
-      const records = data?.data || [];
-      if (Array.isArray(records) && records.length > 0) {
-        const first = records[0];
-        // Check for completion
-        if (
-          first.status === "FIRST_SUCCESS" ||
-          first.status === "SUCCESS" ||
-          first.status === "COMPLETE" ||
-          first.audioUrl ||
-          first.audio_url
-        ) {
-          return first;
-        }
+      const record = data?.data;
+      if (!record) continue;
 
-        // Check for failure
-        if (
-          first.status === "GENERATE_AUDIO_FAILED" ||
-          first.status === "CREATE_TASK_FAILED"
-        ) {
-          throw new Error(`Suno generation failed with status: ${first.status}`);
+      // Handle both array and object response formats
+      const item = Array.isArray(record) ? record[0] : record;
+      if (!item) continue;
+
+      // Check the response field for completed songs
+      const response = item.response;
+      
+      // Check for completion
+      if (
+        item.status === "FIRST_SUCCESS" ||
+        item.status === "SUCCESS" ||
+        item.status === "COMPLETE"
+      ) {
+        const parsed = typeof response === "string" ? JSON.parse(response) : response;
+        if (parsed) {
+          // Suno nests songs under response.sunoData[]
+          const sunoData = parsed.sunoData || parsed.suno_data || [];
+          const songData = Array.isArray(sunoData) && sunoData.length > 0
+            ? sunoData[0]
+            : parsed;
+          const audioUrl = songData?.audioUrl || songData?.audio_url || songData?.sourceAudioUrl || songData?.streamAudioUrl;
+          if (audioUrl) {
+            return {
+              audioUrl,
+              duration: songData?.duration,
+              imageUrl: songData?.imageUrl || songData?.sourceImageUrl,
+              bpm: null,
+            };
+          }
         }
+        return item;
+      }
+
+      // Check for failure
+      if (
+        item.status === "GENERATE_AUDIO_FAILED" ||
+        item.status === "CREATE_TASK_FAILED"
+      ) {
+        throw new Error(`Suno generation failed: ${item.errorMessage || item.status}`);
       }
     } catch (e) {
       if (e instanceof Error && e.message.includes("Suno generation failed")) throw e;
