@@ -1,13 +1,14 @@
 import { forwardRef } from "react";
 import { motion } from "framer-motion";
-import { Music, Clock, Disc3 } from "lucide-react";
+import { Music, Clock, Disc3, RotateCcw } from "lucide-react";
 import type { Song } from "@/hooks/useSongs";
 import PipelineStatus from "./PipelineStatus";
+import { Button } from "./ui/button";
 
 const SongCard = forwardRef<
   HTMLDivElement,
-  { song: Song; onSelect: (song: Song) => void; selected: boolean }
->(({ song, onSelect, selected }, ref) => {
+  { song: Song; onSelect: (song: Song) => void; selected: boolean; onRetry?: (songId: string) => void }
+>(({ song, onSelect, selected, onRetry }, ref) => {
   const formatDuration = (seconds: number | null) => {
     if (!seconds) return "--:--";
     const m = Math.floor(seconds / 60);
@@ -53,7 +54,21 @@ const SongCard = forwardRef<
         </div>
       </div>
 
-      {song.status !== "completed" && (
+      {song.status === "failed" && onRetry && (
+        <div className="mt-3 flex items-center gap-2">
+          <PipelineStatus status={song.status} />
+          <Button
+            size="sm"
+            variant="outline"
+            className="ml-auto text-xs"
+            onClick={(e) => { e.stopPropagation(); onRetry(song.id); }}
+          >
+            <RotateCcw className="h-3 w-3 mr-1" /> Retry
+          </Button>
+        </div>
+      )}
+
+      {song.status !== "completed" && song.status !== "failed" && (
         <div className="mt-3">
           <PipelineStatus status={song.status} />
         </div>

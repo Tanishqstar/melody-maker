@@ -71,5 +71,10 @@ export function useSongs() {
     return data;
   };
 
-  return { songs, loading, createSong };
+  const retrySong = async (songId: string) => {
+    await supabase.from("songs").update({ status: "queued" as const }).eq("id", songId);
+    supabase.functions.invoke("generate-song", { body: { songId } });
+  };
+
+  return { songs, loading, createSong, retrySong };
 }
